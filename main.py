@@ -428,6 +428,23 @@ async def get_bookmarks(count: int = 20) -> list[dict]:
 
 
 @mcp.tool()
+async def get_bookmark_context(index: int = 0) -> list:
+    """Get full context of a bookmarked tweet including parsed media.
+
+    Images are returned inline. Videos under 5 minutes are parsed
+    into keyframes.
+
+    Args:
+        index: Which bookmark to get context for (0 = most recent).
+    """
+    client = await get_client()
+    tweets = await client.get_bookmarks(count=index + 1)
+    if index >= len(tweets):
+        return [TextContent(type="text", text=f"Bookmark at index {index} not found.")]
+    return await _tweet_with_context(tweets[index])
+
+
+@mcp.tool()
 async def bookmark_tweet(tweet_id: str) -> dict:
     """Bookmark/save a tweet.
 
