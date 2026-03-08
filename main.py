@@ -265,16 +265,33 @@ async def post_tweet(text: str, reply_to: str | None = None) -> dict:
     return {"id": tweet.id, "text": tweet.text}
 
 
+async def _tweet_with_context(tweet) -> list:
+    """Build rich content blocks for a tweet: metadata + parsed media."""
+    tweet_data = _tweet_to_dict(tweet)
+    content: list = [TextContent(type="text", text=json.dumps(tweet_data, indent=2))]
+
+    if tweet.media:
+        media_content = await _parse_media(tweet.media)
+        content.extend(media_content)
+
+    return content
+
+
 @mcp.tool()
-async def get_tweet(tweet_id: str) -> dict:
-    """Get a single tweet by its ID.
+async def get_tweet(tweet_id: str) -> list:
+    """Get a single tweet by its ID with full media context.
+
+    Images are returned inline. Videos under 5 minutes are parsed
+    into keyframes. Includes subtitles when available.
 
     Args:
         tweet_id: The ID of the tweet to fetch.
     """
     client = await get_client()
-    tweet = await client.get_tweet_by_id(tweet_id)
-    return _tweet_to_dict(tweet)
+    tweets = await client.get_tweets_by_ids([tweet_id])
+    if not tweets:
+        return [TextContent(type="text", text=f"Tweet {tweet_id} not found.")]
+    return await _tweet_with_context(tweets[0])
 
 
 @mcp.tool()
