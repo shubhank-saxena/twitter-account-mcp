@@ -14,6 +14,7 @@ Twitter's API free tier has been deprecated. The paid tiers start at $200/month.
 | `get_my_timeline` | Get your home timeline |
 | `get_my_recent_tweets` | Get your recent tweets |
 | `post_tweet` | Post a tweet (with optional reply) |
+| `get_tweet` | Get a tweet with inline images and video keyframes |
 | `delete_tweet` | Delete a tweet by ID |
 | `search_tweets` | Search recent tweets |
 | `get_user` | Look up any user's profile |
@@ -25,6 +26,7 @@ Twitter's API free tier has been deprecated. The paid tiers start at $200/month.
 | `unfollow_user` | Unfollow a user |
 | `get_trending` | Get trending topics |
 | `get_bookmarks` | Get your saved/bookmarked tweets |
+| `get_bookmark_context` | Get a bookmark with inline images and video keyframes |
 | `bookmark_tweet` | Bookmark a tweet |
 | `unbookmark_tweet` | Remove a bookmark |
 
@@ -34,13 +36,14 @@ Twitter's API free tier has been deprecated. The paid tiers start at $200/month.
 
 - Python 3.13+
 - [uv](https://docs.astral.sh/uv/)
+- [ffmpeg](https://ffmpeg.org/) (for video keyframe extraction)
 - A Twitter/X account
 - [Cookie-Editor](https://cookie-editor.com/) browser extension
 
 ### 1. Clone and install
 
 ```bash
-git clone https://github.com/0xshubhank/twitter-account-mcp.git
+git clone https://github.com/shubhank-saxena/twitter-account-mcp.git
 cd twitter-account-mcp
 uv sync
 ```
