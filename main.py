@@ -1,11 +1,19 @@
+import asyncio
 import json
 import os
+import subprocess
+import tempfile
 from pathlib import Path
 from urllib.parse import unquote
 
+import httpx
 from dotenv import load_dotenv
-from mcp.server.fastmcp import FastMCP
+from mcp.server.fastmcp import FastMCP, Image
+from mcp.types import TextContent
 from twikit import Client
+
+MAX_VIDEO_DURATION_MS = 5 * 60 * 1000  # 5 minutes
+VIDEO_FRAME_COUNT = 6
 
 load_dotenv()
 
@@ -55,6 +63,110 @@ async def get_client() -> Client:
 
     _client = client
     return client
+
+
+async def _download(url: str) -> bytes:
+    """Download a URL and return the raw bytes."""
+    async with httpx.AsyncClient() as http:
+        resp = await http.get(url, follow_redirects=True, timeout=60)
+        resp.raise_for_status()
+        return resp.content
+
+
+def _extract_video_frames(video_bytes: bytes, count: int = VIDEO_FRAME_COUNT) -> list[bytes]:
+    """Extract evenly-spaced frames from a video using ffmpeg."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        video_path = Path(tmpdir) / "video.mp4"
+        video_path.write_bytes(video_bytes)
+
+        # Get duration
+        probe = subprocess.run(
+            ["ffprobe", "-v", "quiet", "-show_entries", "format=duration",
+             "-of", "csv=p=0", str(video_path)],
+            capture_output=True, text=True,
+        )
+        duration = float(probe.stdout.strip() or "0")
+        if duration <= 0:
+            return []
+
+        # Calculate timestamps for evenly-spaced frames
+        interval = duration / (count + 1)
+        timestamps = [interval * (i + 1) for i in range(count)]
+
+        frames = []
+        for i, ts in enumerate(timestamps):
+            frame_path = Path(tmpdir) / f"frame_{i}.jpg"
+            subprocess.run(
+                ["ffmpeg", "-v", "quiet", "-ss", str(ts), "-i", str(video_path),
+                 "-frames:v", "1", "-q:v", "2", str(frame_path)],
+                capture_output=True,
+            )
+            if frame_path.exists():
+                frames.append(frame_path.read_bytes())
+
+        return frames
+
+
+async def _get_video_url(media) -> str | None:
+    """Get the best MP4 URL from a video media object."""
+    if not (hasattr(media, "video_info") and media.video_info):
+        return None
+    variants = media.video_info.get("variants", [])
+    mp4s = [v for v in variants if v.get("content_type") == "video/mp4"]
+    if not mp4s:
+        return None
+    return max(mp4s, key=lambda v: v.get("bitrate", 0))["url"]
+
+
+async def _parse_media(media_list) -> list:
+    """Parse tweet media into Image objects and text descriptions.
+
+    Returns a list of MCP content blocks (Image, TextContent).
+    """
+    content = []
+
+    for media in media_list:
+        if media.type == "photo":
+            img_bytes = await _download(media.media_url)
+            content.append(TextContent(type="text", text=f"[Image from tweet]"))
+            content.append(Image(data=img_bytes, format="jpeg"))
+
+        elif media.type in ("video", "animated_gif"):
+            duration_ms = getattr(media, "duration_millis", 0) or 0
+
+            # Always include thumbnail
+            thumb_bytes = await _download(media.media_url)
+            content.append(TextContent(type="text", text=f"[Video thumbnail — duration: {duration_ms / 1000:.1f}s]"))
+            content.append(Image(data=thumb_bytes, format="jpeg"))
+
+            # For videos under 5 min, extract frames
+            if duration_ms > 0 and duration_ms <= MAX_VIDEO_DURATION_MS:
+                video_url = await _get_video_url(media)
+                if video_url:
+                    video_bytes = await _download(video_url)
+                    frames = await asyncio.to_thread(
+                        _extract_video_frames, video_bytes
+                    )
+                    for i, frame_bytes in enumerate(frames):
+                        content.append(TextContent(
+                            type="text",
+                            text=f"[Video frame {i + 1}/{len(frames)}]",
+                        ))
+                        content.append(Image(data=frame_bytes, format="jpeg"))
+
+            # Try to get subtitles
+            if hasattr(media, "get_subtitles"):
+                try:
+                    subs = await media.get_subtitles()
+                    if subs:
+                        content.append(TextContent(
+                            type="text",
+                            text=f"[Video subtitles]\n{subs}",
+                        ))
+                except Exception:
+                    pass
+
+    return content
 
 
 def _media_to_dict(media) -> dict:
