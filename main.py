@@ -252,5 +252,41 @@ async def get_trending() -> list[dict]:
     return [{"name": t.name, "count": t.posts_count} for t in trends]
 
 
+@mcp.tool()
+async def get_bookmarks(count: int = 20) -> list[dict]:
+    """Get the authenticated user's saved/bookmarked tweets.
+
+    Args:
+        count: Number of bookmarks to return.
+    """
+    client = await get_client()
+    tweets = await client.get_bookmarks(count=count)
+    return [_tweet_to_dict(t) for t in tweets]
+
+
+@mcp.tool()
+async def bookmark_tweet(tweet_id: str) -> dict:
+    """Bookmark/save a tweet.
+
+    Args:
+        tweet_id: The ID of the tweet to bookmark.
+    """
+    client = await get_client()
+    await client.bookmark_tweet(tweet_id)
+    return {"bookmarked": True}
+
+
+@mcp.tool()
+async def unbookmark_tweet(tweet_id: str) -> dict:
+    """Remove a tweet from bookmarks.
+
+    Args:
+        tweet_id: The ID of the tweet to unbookmark.
+    """
+    client = await get_client()
+    await client.delete_bookmark(tweet_id)
+    return {"unbookmarked": True}
+
+
 if __name__ == "__main__":
     mcp.run()

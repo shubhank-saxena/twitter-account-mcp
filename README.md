@@ -24,6 +24,9 @@ Twitter's API free tier has been deprecated. The paid tiers start at $200/month.
 | `follow_user` | Follow a user |
 | `unfollow_user` | Unfollow a user |
 | `get_trending` | Get trending topics |
+| `get_bookmarks` | Get your saved/bookmarked tweets |
+| `bookmark_tweet` | Bookmark a tweet |
+| `unbookmark_tweet` | Remove a bookmark |
 
 ## Setup
 
