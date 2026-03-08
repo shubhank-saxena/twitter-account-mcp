@@ -57,8 +57,22 @@ async def get_client() -> Client:
     return client
 
 
+def _media_to_dict(media) -> dict:
+    result = {
+        "type": media.type,
+        "url": media.media_url,
+    }
+    if media.type == "video" and hasattr(media, "video_info") and media.video_info:
+        variants = media.video_info.get("variants", [])
+        mp4s = [v for v in variants if v.get("content_type") == "video/mp4"]
+        if mp4s:
+            best = max(mp4s, key=lambda v: v.get("bitrate", 0))
+            result["video_url"] = best["url"]
+    return result
+
+
 def _tweet_to_dict(tweet) -> dict:
-    return {
+    result = {
         "id": tweet.id,
         "text": tweet.text,
         "author": tweet.user.name if tweet.user else None,
@@ -69,6 +83,14 @@ def _tweet_to_dict(tweet) -> dict:
         "replies": tweet.reply_count,
         "views": tweet.view_count,
     }
+    if tweet.media:
+        result["media"] = [_media_to_dict(m) for m in tweet.media]
+    if tweet.urls:
+        result["urls"] = [
+            {"display": u["display_url"], "expanded": u["expanded_url"]}
+            for u in tweet.urls
+        ]
+    return result
 
 
 def _user_to_dict(user) -> dict:
@@ -129,6 +151,18 @@ async def post_tweet(text: str, reply_to: str | None = None) -> dict:
     client = await get_client()
     tweet = await client.create_tweet(text=text, reply_to=reply_to)
     return {"id": tweet.id, "text": tweet.text}
+
+
+@mcp.tool()
+async def get_tweet(tweet_id: str) -> dict:
+    """Get a single tweet by its ID.
+
+    Args:
+        tweet_id: The ID of the tweet to fetch.
+    """
+    client = await get_client()
+    tweet = await client.get_tweet_by_id(tweet_id)
+    return _tweet_to_dict(tweet)
 
 
 @mcp.tool()
