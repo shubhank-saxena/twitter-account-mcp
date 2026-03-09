@@ -1,6 +1,6 @@
 # Twitter/X MCP Server
 
-An MCP (Model Context Protocol) server that lets AI assistants interact with your Twitter/X account. No API key required — uses browser cookie authentication via [twikit](https://github.com/d60/twikit).
+An MCP (Model Context Protocol) server that lets AI assistants interact with your Twitter/X account. No API key required - uses browser cookie authentication via [twikit](https://github.com/d60/twikit).
 
 ## Why?
 
@@ -107,7 +107,7 @@ Browser cookies expire periodically. When you start seeing auth errors, re-expor
 
 ## Disclaimer
 
-This project uses an unofficial method to access Twitter. It is not affiliated with or endorsed by Twitter/X. Use at your own risk — your account could potentially be restricted if Twitter detects unusual activity. Keep request rates reasonable.
+This project uses an unofficial method to access Twitter. It is not affiliated with or endorsed by Twitter/X. Use at your own risk - your account could potentially be restricted if Twitter detects unusual activity. Keep request rates reasonable.
 
 ## License
 

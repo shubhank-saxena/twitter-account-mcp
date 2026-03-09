@@ -136,7 +136,7 @@ async def _parse_media(media_list) -> list:
 
             # Always include thumbnail
             thumb_bytes = await _download(media.media_url)
-            content.append(TextContent(type="text", text=f"[Video thumbnail — duration: {duration_ms / 1000:.1f}s]"))
+            content.append(TextContent(type="text", text=f"[Video thumbnail - duration: {duration_ms / 1000:.1f}s]"))
             content.append(Image(data=thumb_bytes, format="jpeg"))
 
             # For videos under 5 min, extract frames
