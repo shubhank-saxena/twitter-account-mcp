@@ -2,6 +2,8 @@
 
 An MCP (Model Context Protocol) server that lets AI assistants interact with your Twitter/X account. No API key required - uses browser cookie authentication via [twikit](https://github.com/d60/twikit).
 
+Read the blog post: [I built an MCP server so Claude can use my Twitter account](https://shubhanksaxena.substack.com/p/i-built-an-mcp-server-so-claude-can)
+
 ## Why?
 
 Twitter's API free tier has been deprecated. The paid tiers start at $200/month. This MCP server bypasses that by using browser cookies to authenticate, giving you full access to your account through any MCP-compatible client (Claude Code, Claude Desktop, etc).
